@@ -5,12 +5,15 @@ VERSION=2017.07.18~buster+20170718
 KEYRING=rcn-ee-archive-keyring
 export VERSION KEYRING REPO
 
+if [ "x_$1" = "x_download" ]; then
 # Retrieve the package with Robert's signing key from his repository
 wget $REPO/pool/main/r/$KEYRING/${KEYRING}_${VERSION}_all.deb
 
+else
 # Create a debian package with an apt sources line pointing to the above repo
 echo deb $REPO buster main > rcn-ee.com
 mhamakedeb apt.rcn-ee.csv $VERSION armhf
+fi
 
 # move the debs to the target directory
 mkdir -p debs/bionic

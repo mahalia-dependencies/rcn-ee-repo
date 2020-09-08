@@ -1,17 +1,25 @@
 pipeline {
-    agent {label "mhadev && linux"}
+    agent {label "lsldev && linux"}
     stages {
-        stage("create debian packages") {
+        stage("Download rcn-ee key") {
             steps {
-                sh "./create_debian_packages"
-                stash name: "deb", includes: 'debs/*/*.deb'
+                sh "./create_debian_packages download"
+                stash name: "aptkeydeb", includes: 'debs/*/*.deb'
+            }
+        }
+        stage("create debian packages") {
+            agent {label "mhadev && linux"}
+            steps {
+                sh "./create_debian_packages apt-sources"
+                stash name: "aptsrcdeb", includes: 'debs/*/*.deb'
             }
         }
         stage("debian packages for apt") {
             agent {label "aptly"}
             steps {
                 // receive all created deb packages from build
-                unstash "deb"
+                unstash "aptkeydeb"
+                unstash "aptsrcdeb"
                 archiveArtifacts "debs/*/*.deb"
 
                 // Copies the new debs to the stash of existing debs,
