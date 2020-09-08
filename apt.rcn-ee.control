@@ -1,0 +1,3 @@
+Section: admin
+Maintainer: openMHA packaging team <packaging@openmha.org>
+Description: apt sources line for Robert C Nelson's repository
