@@ -16,5 +16,8 @@ mhamakedeb apt.rcn-ee.csv $VERSION armhf
 fi
 
 # move the debs to the target directory
-mkdir -p debs/bionic
-mv *.deb debs/bionic
+for SYSTEM in bionic buster focal
+do mkdir -p debs/${SYSTEM}
+   ln *.deb debs/${SYSTEM}
+done
+rm *.deb
