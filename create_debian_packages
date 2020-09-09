@@ -1,15 +1,26 @@
 #!/bin/bash -ex
 
+# Clean up artifacts from last build
 git clean -ffdx .
 
 REPO=http://repos.rcn-ee.com/debian
-VERSION=2017.07.18~buster+20170718
+ORIGVERSION=2017.07.18~buster+20170718
+VERSION=${ORIGVERSION}.mahalia
 KEYRING=rcn-ee-archive-keyring
 export VERSION KEYRING REPO
 
 if [ "x_$1" = "x_download" ]; then
     # Retrieve the package with Robert's signing key from his repository
-    wget $REPO/pool/main/r/$KEYRING/${KEYRING}_${VERSION}_all.deb
+    wget $REPO/pool/main/r/$KEYRING/${KEYRING}_${ORIGVERSION}_all.deb
+
+    # Extend the package so that the key is in the directory multistrap expects
+    dpkg-deb -R ${KEYRING}_${ORIGVERSION}_all.deb keyringdir
+    rm ${KEYRING}_${ORIGVERSION}_all.deb
+    mkdir -p keyringdir/usr/share/keyrings
+    cp keyringdir/etc/apt/trusted.gpg.d/*.gpg keyringdir/usr/share/keyrings/
+    sed -i -e '/^Version: / s/$/.mahalia/' keyringdir/DEBIAN/control
+    fakeroot dpkg-deb -b keyringdir
+    mv keyringdir.deb ${KEYRING}_${VERSION}_all.deb
 else
     # Create debian package with an apt sources line pointing to the above repo
     echo "deb $REPO buster main" > rcn-ee.com
