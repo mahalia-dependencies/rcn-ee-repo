@@ -1,5 +1,16 @@
 #!/bin/bash -ex
 
+# Build debian packages for using Robert C Nelson's Beaglebone Black repository.
+#
+# When called with parameter "download", this skript downloads Robert's package
+# with his signing key, applies some modifications that we need.
+#
+# When called with another or no parameter, this skript creates a debian package
+# containing an apt source line pointing do Robert's repository.
+#
+# Created debian packages are stored in debs/bionic, debs/buster and debs/focal.
+
+
 # Clean up artifacts from last build
 git clean -ffdx .
 
@@ -10,20 +21,29 @@ KEYRING=rcn-ee-archive-keyring
 export VERSION KEYRING REPO
 
 if [ "x_$1" = "x_download" ]; then
-    # Retrieve the package with Robert's signing key from his repository
+    # Retrieve the package with Robert's signing key from his repository.
     wget $REPO/pool/main/r/$KEYRING/${KEYRING}_${ORIGVERSION}_all.deb
 
-    # Extend the package so that the key is in the directory multistrap expects
+    # Unpack the package to alter it.
     dpkg-deb -R ${KEYRING}_${ORIGVERSION}_all.deb keyringdir
     rm ${KEYRING}_${ORIGVERSION}_all.deb
+
+    # Copy the key to the directory where multistrap expects it.
     mkdir -p keyringdir/usr/share/keyrings
     cp keyringdir/etc/apt/trusted.gpg.d/*.gpg keyringdir/usr/share/keyrings/
+
+    # Remove the postinst skript which generates a warning and is not needed.
+    rm -f keyringdir/DEBIAN/postinst
+
+    # Append ".mahalia" to version number for differentiation.
     sed -i -e '/^Version: / s/$/.mahalia/' keyringdir/DEBIAN/control
+
+    # Repack the debian package.
     fakeroot dpkg-deb -b keyringdir
     mv keyringdir.deb ${KEYRING}_${VERSION}_all.deb
 else
-    # Create debian package with an apt sources line pointing to the above repo
-    echo "deb $REPO buster main" > rcn-ee.com
+    # Create debian package with an apt sources line pointing to the above repo.
+    echo "deb $REPO buster main" > rcn-ee.com.list
     mhamakedeb apt.rcn-ee.csv $VERSION armhf
 fi
 
